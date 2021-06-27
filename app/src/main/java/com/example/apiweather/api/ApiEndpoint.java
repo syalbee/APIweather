@@ -15,4 +15,5 @@ public interface ApiEndpoint {
             @Query("appid") String apikey,
             @Query("lang") String lang
     );
+
 }
