@@ -15,9 +15,13 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.apiweather.api.ApiService;
 import com.example.apiweather.model.ModelCuaca;
 
@@ -33,20 +37,29 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     private final String TAG = "MainActivity";
     private final String APIKEY = "7f8e3b7e1c4ec0e9293195102356009e";
-    private final String LANG = "id";
-    private final String ImagaeURL = "https://openweathermap.org/img/wn/10d@4x.png";
+    private final String LANG = "en";
+    private final String ImagaeURL = "https://openweathermap.org/img/wn/";
 
     private List<ModelCuaca.weather> results = new ArrayList<>();
 
 
     private LocationManager locationManager;
-    TextView textView;
+    TextView tvWaktu,tvLokasi,tvMain,tvDescription,tvSuhu,tvHumi;
+    ImageView ivIcon;
+    ProgressBar pbLoad;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textView = findViewById(R.id.tvCek);
+        tvWaktu = findViewById(R.id.tvWaktu);
+        tvLokasi = findViewById(R.id.tvLokasi);
+        tvMain = findViewById(R.id.tvMain);
+        tvDescription = findViewById(R.id.tvDescription);
+        tvSuhu = findViewById(R.id.tvSuhu);
+        tvHumi = findViewById(R.id.tvHumi);
+        ivIcon = findViewById(R.id.ivIcon);
+        pbLoad = findViewById(R.id.pbLoad);
 
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED){
@@ -55,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             },100);
 
         }
+        showLoading(true);
         getLocation();
 //        onLocationChanged();
 
@@ -69,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         if(response.isSuccessful()){
                             ArrayList<ModelCuaca.weather> results = response.body().getWeather();
                             ModelCuaca.Main mlcuaca = response.body().getMain();
-
+                            showLoading(false);
                             _weather(results);
                             _mains(mlcuaca);
                             Log.d(TAG, mlcuaca.toString());
@@ -86,12 +100,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     private void _weather(List<ModelCuaca.weather> modelCuacas){
         ModelCuaca.weather res = modelCuacas.get(0);
-        textView.setText("Cek : " + res.getDescription());
+        tvDescription.setText(res.getDescription());
+        tvMain.setText(res.getMain());
+        Glide.with(this).load(ImagaeURL + res.getIcon() + "@4x.png").into(ivIcon);
     }
 
     private void _mains(ModelCuaca.Main mlcuaca){
 
-
+        double suhu = Math.round(mlcuaca.getTemp() - 273.15);
+        tvSuhu.setText(String.valueOf(suhu) + "°c");
+        tvHumi.setText(String.valueOf(mlcuaca.getHumidity()) + " %");
     }
 
     @SuppressLint("MissingPermission")
@@ -118,11 +136,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             String address = addresses.get(0).getAddressLine(0);
             String kecamatan = addresses.get(0).getLocality();
             getApi(lat, lon);
-            textView.setText(kecamatan);
-//            textView_location.setText(address);
+            tvLokasi.setText(kecamatan);
 
         }catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    private void showLoading(Boolean loading){
+        if (loading) {
+            pbLoad.setVisibility(View.VISIBLE);
+        } else {
+            pbLoad.setVisibility(View.GONE);
         }
     }
 

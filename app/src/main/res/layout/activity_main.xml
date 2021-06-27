@@ -146,10 +146,10 @@
         android:layout_height="wrap_content"
         tools:layout_editor_absoluteX="177dp"
         tools:layout_editor_absoluteY="308dp"
+        android:indeterminateTint="@color/pink"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
