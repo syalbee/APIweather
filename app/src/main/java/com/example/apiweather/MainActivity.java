@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private final String ImagaeURL = "https://openweathermap.org/img/wn/10d@4x.png";
 
     private List<ModelCuaca.weather> results = new ArrayList<>();
-    private ModelCuaca.Main mains = new ModelCuaca.Main();
+
 
     private LocationManager locationManager;
     TextView textView;
@@ -68,10 +68,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Log.d(TAG, response.toString());
                         if(response.isSuccessful()){
                             ArrayList<ModelCuaca.weather> results = response.body().getWeather();
-//                            String coba = String.valueOf(mains.toString());
-                            Log.d(TAG, mains.toString());
-                            cetak(results);
-                            Log.d(TAG, results.toString());
+                            ModelCuaca.Main mlcuaca = response.body().getMain();
+
+                            _weather(results);
+                            _mains(mlcuaca);
+                            Log.d(TAG, mlcuaca.toString());
 
                         }
                     }
@@ -83,9 +84,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 });
     }
 
-    private void cetak(List<ModelCuaca.weather> modelCuacas){
+    private void _weather(List<ModelCuaca.weather> modelCuacas){
         ModelCuaca.weather res = modelCuacas.get(0);
         textView.setText("Cek : " + res.getDescription());
+    }
+
+    private void _mains(ModelCuaca.Main mlcuaca){
+
+
     }
 
     @SuppressLint("MissingPermission")
