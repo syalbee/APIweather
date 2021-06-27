@@ -24,6 +24,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.example.apiweather.api.ApiService;
 import com.example.apiweather.model.ModelCuaca;
+import com.example.apiweather.model.ModelWaktu;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
     private LocationManager locationManager;
+    ModelWaktu getDate = new ModelWaktu();
     TextView tvWaktu,tvLokasi,tvMain,tvDescription,tvSuhu,tvHumi;
     ImageView ivIcon;
     ProgressBar pbLoad;
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             },100);
 
         }
+        tvWaktu.setText(getDate.getDateNow("E, dd MMMM"));
         showLoading(true);
         getLocation();
 //        onLocationChanged();
