@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.apiweather"
-        minSdkVersion 28
+        minSdkVersion 25
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -40,6 +40,9 @@ dependencies {
 
     //Glide
     implementation 'com.github.bumptech.glide:glide:4.11.0'
+
+    //Gms location
+    implementation 'com.google.android.gms:play-services-location:17.0.0'
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'

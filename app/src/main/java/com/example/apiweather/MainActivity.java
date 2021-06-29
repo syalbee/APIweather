@@ -7,6 +7,9 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -14,6 +17,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -25,6 +30,13 @@ import com.bumptech.glide.Glide;
 import com.example.apiweather.api.ApiService;
 import com.example.apiweather.model.ModelCuaca;
 import com.example.apiweather.model.ModelWaktu;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,26 +46,28 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements LocationListener {
+public class MainActivity extends AppCompatActivity {
 
     private final String TAG = "MainActivity";
     private final String APIKEY = "7f8e3b7e1c4ec0e9293195102356009e";
-    private final String LANG = "en";
+    private final String LANG = "id";
     private final String ImagaeURL = "https://openweathermap.org/img/wn/";
 
     private List<ModelCuaca.weather> results = new ArrayList<>();
 
-
-    private LocationManager locationManager;
+    FusedLocationProviderClient fusedLocationProviderClient;
     ModelWaktu getDate = new ModelWaktu();
     TextView tvWaktu,tvLokasi,tvMain,tvDescription,tvSuhu,tvHumi;
     ImageView ivIcon;
-    ProgressBar pbLoad;
+
+    ProgressDialog progressDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
         tvWaktu = findViewById(R.id.tvWaktu);
         tvLokasi = findViewById(R.id.tvLokasi);
         tvMain = findViewById(R.id.tvMain);
@@ -61,20 +75,110 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         tvSuhu = findViewById(R.id.tvSuhu);
         tvHumi = findViewById(R.id.tvHumi);
         ivIcon = findViewById(R.id.ivIcon);
-        pbLoad = findViewById(R.id.pbLoad);
 
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION
-            },100);
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MainActivity.this);
 
+        if(ActivityCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(MainActivity.this
+                ,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+
+            getCurrentLocation();
+            tvWaktu.setText(getDate.getDateNow("E, dd MMMM"));
+            showLoading(true);
+
+        }else {
+            ActivityCompat.requestPermissions(MainActivity.this
+                    ,new String[]{Manifest.permission.ACCESS_FINE_LOCATION
+                            ,Manifest.permission.ACCESS_COARSE_LOCATION}
+                    ,100);
         }
-        tvWaktu.setText(getDate.getDateNow("E, dd MMMM"));
-        showLoading(true);
-        getLocation();
-//        onLocationChanged();
 
+
+//        getCurrentLocation();
+
+
+    }
+    @SuppressLint("MissingSuperCall")
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull  int[] grantResults) {
+
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 100 && grantResults.length > 0 && (grantResults[0] + grantResults[1]
+                == PackageManager.PERMISSION_GRANTED)) {
+            getCurrentLocation();
+        } else {
+            Toast.makeText(getApplicationContext(), "Permession denied", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    @SuppressLint("MissingPermission")
+    private void getCurrentLocation() {
+
+        LocationManager locationManager = (LocationManager) getSystemService(
+                Context.LOCATION_SERVICE
+        );
+
+        if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+
+            fusedLocationProviderClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+                @Override
+                public void onComplete(@NonNull Task<Location> task) {
+
+                    Location location = task.getResult();
+                    if(location != null){
+
+                        try {
+                            Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
+                            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                            String lat = String.valueOf(location.getLatitude());
+                            String lon = String.valueOf(location.getLongitude());
+                            String kecamatan = addresses.get(0).getLocality();
+                            getApi(lat, lon);
+                            tvLokasi.setText(kecamatan);
+                        }
+                    catch (Exception e){
+                            e.printStackTrace();
+                        }
+
+
+                    } else {
+                        LocationRequest locationRequest = new LocationRequest()
+                                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                                .setInterval(10000)
+                                .setFastestInterval(1000)
+                                .setNumUpdates(1);
+
+                        LocationCallback locationCallback = new LocationCallback(){
+                            @Override
+                            public void onLocationResult(LocationResult locationResult) {
+                                Location location1 = locationResult.getLastLocation();
+                                try {
+                                    Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
+                                    List<Address> addresses = geocoder.getFromLocation(location1.getLatitude(), location1.getLongitude(), 1);
+                                    String lat = String.valueOf(location1.getLatitude());
+                                    String lon = String.valueOf(location1.getLongitude());
+                                    String kecamatan = addresses.get(0).getLocality();
+                                    getApi(lat, lon);
+                                    tvLokasi.setText(kecamatan);
+                                } catch (Exception e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        };
+
+                        fusedLocationProviderClient.requestLocationUpdates(locationRequest
+                                , locationCallback, Looper.myLooper());
+
+                    }
+                }
+            });
+        } else {
+            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        }
     }
 
     private void getApi(String lat, String lon){
@@ -115,57 +219,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         tvHumi.setText(String.valueOf(mlcuaca.getHumidity()) + " %");
     }
 
-    @SuppressLint("MissingPermission")
-    private void getLocation() {
-
-        try {
-            locationManager = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,5, (LocationListener) MainActivity.this);
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-    }
-
-    @Override
-    public void onLocationChanged(@NonNull Location location) {
-        Toast.makeText(this, ""+location.getLatitude()+"/"+location.getLongitude(), Toast.LENGTH_SHORT).show();
-        String lat = String.valueOf(location.getLatitude());
-        String lon = String.valueOf(location.getLongitude());
-        try {
-            Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
-            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),1);
-            String address = addresses.get(0).getAddressLine(0);
-            String kecamatan = addresses.get(0).getLocality();
-            getApi(lat, lon);
-            tvLokasi.setText(kecamatan);
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
 
     private void showLoading(Boolean loading){
         if (loading) {
-            pbLoad.setVisibility(View.VISIBLE);
+//            pbLoad.setVisibility(View.VISIBLE);
+            progressDialog.setMessage("Mendapatkan lokasi");
+            progressDialog.show();
         } else {
-            pbLoad.setVisibility(View.GONE);
+            progressDialog.dismiss();
+//            pbLoad.setVisibility(View.GONE);
         }
     }
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-//        Toast.makeText(this, ""+ provider, Toast.LENGTH_SHORT).show();
-    }
 
-    @Override
-    public void onProviderEnabled(String provider) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-
-    }
 }
