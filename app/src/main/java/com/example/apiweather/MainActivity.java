@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         ivIcon = findViewById(R.id.ivIcon);
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MainActivity.this);
+        tvWaktu.setText(getDate.getDateNow("E, dd MMMM"));
 
         if(ActivityCompat.checkSelfPermission(MainActivity.this,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -84,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
                 ,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
 
             getCurrentLocation();
-            tvWaktu.setText(getDate.getDateNow("E, dd MMMM"));
             showLoading(true);
 
         }else {
@@ -129,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
 
                     Location location = task.getResult();
                     if(location != null){
-
                         try {
                             Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
                             List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
@@ -194,7 +193,6 @@ public class MainActivity extends AppCompatActivity {
                             _weather(results);
                             _mains(mlcuaca);
                             Log.d(TAG, mlcuaca.toString());
-
                         }
                     }
 
